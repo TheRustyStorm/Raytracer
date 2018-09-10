@@ -44,7 +44,14 @@ fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f32> {
     (1.0 - t) * Vector3::new(1.0, 1.0, 1.0) + t * Vector3::new(0.5, 0.7, 1.0)
 }
 
-fn trace(vec: &mut Vec<u8>, width: usize, height: usize, min_height: usize, max_height: usize, num_samples: usize) {
+fn trace(
+    vec: &mut Vec<u8>,
+    width: usize,
+    height: usize,
+    min_height: usize,
+    max_height: usize,
+    num_samples: usize,
+) {
     let look_from = Vector3::new(0.0, 0.0, 5.0);
     let look_at = Vector3::new(0.0, 0.0, -1.0);
     let up = Vector3::new(0.0, 1.0, 0.0);
@@ -134,7 +141,7 @@ fn main() {
                 height,
                 i * height / amount_threads,
                 (i + 1) * height / amount_threads,
-                num_samples
+                num_samples,
             );
         });
         handles.push(t1);
