@@ -21,3 +21,6 @@ Here are some sample pictures:
 
 
 Run with 
+```
+cargo run --release
+```
