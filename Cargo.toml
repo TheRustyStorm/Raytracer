@@ -1,0 +1,9 @@
+[package]
+name = "pathtracer"
+version = "0.1.0"
+authors = ["TheSovietStorm <pzde95@yahoo.de>"]
+
+[dependencies]
+png = "0.12.0"
+cgmath = "0.16.1"
+rand = "0.5.5"
