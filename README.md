@@ -9,7 +9,19 @@ In main.rs search for the creation of spheres, you have three possible materials
 - Metal
 - Dielectric
 
+Adapt the spheres or add new ones if you like.
+
+## Exection
+Run with 
+```
+cargo run --release
+```
+
+## Why another?
+
 The point in writing another Raytracer for me was to check out the [cgmath](https://crates.io/crates/cgmath) crate.
+
+## Examples
 
 Here are some sample pictures:
 
@@ -20,7 +32,4 @@ Here are some sample pictures:
 
 
 
-Run with 
-```
-cargo run --release
-```
+
