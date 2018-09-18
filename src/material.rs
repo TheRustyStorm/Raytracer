@@ -8,7 +8,26 @@ use ray::Ray;
 use std::f32;
 
 fn random_in_unit_sphere() -> Vector3<f32> {
-    Vector3::new(random::<f32>(), random::<f32>(), random::<f32>()).normalize()
+    Vector3::new(
+        2.0 * random::<f32>() - 1.0,
+        2.0 * random::<f32>() - 1.0,
+        2.0 * random::<f32>() - 1.0,
+    ).normalize()
+}
+
+fn random_in_unit_sphere_new() -> Vector3<f32> {
+    let mut v;
+    loop {
+        v = Vector3::new(
+            2.0 * random::<f32>() - 1.0,
+            2.0 * random::<f32>() - 1.0,
+            2.0 * random::<f32>() - 1.0,
+        );
+        if v.magnitude() < 1.0 {
+            break;
+        }
+    }
+    v
 }
 
 fn reflect(v: &Vector3<f32>, n: &Vector3<f32>) -> Vector3<f32> {
@@ -68,7 +87,7 @@ impl Dielectric {
 
 impl Material for Lambertian {
     fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> (Ray, Vector3<f32>, bool) {
-        let target = hit_record.p + hit_record.normal + random_in_unit_sphere();
+        let target = hit_record.p + hit_record.normal + random_in_unit_sphere_new();
         (
             Ray::new(&hit_record.p, target - hit_record.p),
             self.albedo,

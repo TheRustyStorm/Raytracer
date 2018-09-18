@@ -4,6 +4,7 @@ use aabb::Aabb;
 use hitable::HitRecord;
 use hitable::Hitable;
 use ray::Ray;
+
 pub struct HitableList {
     pub list: Vec<Box<Hitable>>,
 }

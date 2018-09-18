@@ -1,8 +1,10 @@
 extern crate cgmath;
+extern crate indicatif;
 extern crate pathtracer;
 extern crate png;
 extern crate rand;
 use cgmath::{InnerSpace, Vector3};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use pathtracer::camera::Camera;
 use pathtracer::hitable::{HitRecord, Hitable};
 use pathtracer::hitable_list::HitableList;
@@ -22,21 +24,18 @@ use std::thread;
 fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f32> {
     let mut hit_record = HitRecord::new(f32::MAX);
     if world.hit(ray, 0.001, f32::MAX, &mut hit_record) {
-        match hit_record.material.clone() {
-            Some(mat) => {
-                let (scattered, attenuation, valid) = mat.scatter(ray, &hit_record);
-                if valid && depth < 100 {
-                    let col = color(&scattered, world, depth + 1);
-                    return Vector3::new(
-                        col.x * attenuation.x,
-                        col.y * attenuation.y,
-                        col.z * attenuation.z,
-                    );
-                } else {
-                    return Vector3::new(0.0, 0.0, 0.0);
-                }
+        if let Some(ref mat) = hit_record.material {
+            let (scattered, attenuation, valid) = mat.scatter(ray, &hit_record);
+            if valid && depth < 1000 {
+                let col = color(&scattered, world, depth + 1);
+                return Vector3::new(
+                    col.x * attenuation.x,
+                    col.y * attenuation.y,
+                    col.z * attenuation.z,
+                );
+            } else {
+                return Vector3::new(0.0, 0.0, 0.0);
             }
-            None => {}
         }
     }
     let unit_dir = ray.direction.normalize();
@@ -51,12 +50,13 @@ fn trace(
     min_height: usize,
     max_height: usize,
     num_samples: usize,
+    bar: ProgressBar,
 ) {
     let look_from = Vector3::new(0.0, 0.0, 5.0);
     let look_at = Vector3::new(0.0, 0.0, -1.0);
     let up = Vector3::new(0.0, 1.0, 0.0);
     let dist_to_focus = (look_from - look_at).magnitude();
-    let aperture = 2.0;
+    let aperture = 0.0;
     let camera = Camera::new(
         look_from,
         look_at,
@@ -69,33 +69,67 @@ fn trace(
     let mut hitable_list = HitableList::new(Vec::new());
 
     //red
-    let red = Rc::new(Lambertian::new(Vector3::new(1.0, 0.0, 0.0)));
+    let _red = Rc::new(Lambertian::new(Vector3::new(1.0, 0.0, 0.0)));
+    //green
+    let _green = Rc::new(Lambertian::new(Vector3::new(0.0, 1.0, 0.0)));
+    //blue
+    let _blue = Rc::new(Lambertian::new(Vector3::new(0.0, 0.0, 1.0)));
+    //white
+    let _white = Rc::new(Lambertian::new(Vector3::new(1.0, 1.0, 1.0)));
+    //red
+    let _red_metal = Rc::new(Metal::new(Vector3::new(1.0, 0.0, 0.0), 0.1));
+    //green
+    let _green_metal = Rc::new(Metal::new(Vector3::new(0.0, 1.0, 0.0), 0.1));
+    //blue
+    let _blue_metal = Rc::new(Metal::new(Vector3::new(0.0, 0.0, 1.0), 0.1));
+    //white
+    let _white_metal = Rc::new(Metal::new(Vector3::new(1.0, 1.0, 1.0), 0.1));
+    //black \m/
+    let _black_metal = Rc::new(Metal::new(Vector3::new(0.0, 0.0, 0.0), 0.1));
+    //black
+    let _black = Rc::new(Lambertian::new(Vector3::new(0.0, 0.0, 0.0)));
     //gold
-    let gold = Rc::new(Metal::new(Vector3::new(0.8, 0.6, 0.2), 0.3));
+    let _gold = Rc::new(Metal::new(Vector3::new(0.8, 0.6, 0.2), 0.3));
     //silver
-    let silver = Rc::new(Metal::new(Vector3::new(0.8, 0.8, 0.8), 0.2));
+    let _silver = Rc::new(Metal::new(Vector3::new(0.8, 0.8, 0.8), 0.2));
+    //glass
+    let _glass = Rc::new(Dielectric::new(1.52));
 
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(0.0, 0.0, -1.0),
         0.5,
-        red.clone(),
+        _glass.clone(),
     )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(0.0, -100.5, -1.0),
         100.0,
-        gold.clone(),
+        _white_metal.clone(),
     )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(1.0, 0.0, -1.0),
         0.5,
-        gold.clone(),
+        _white_metal.clone(),
     )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(-1.0, 0.0, -1.0),
         0.5,
-        silver.clone(),
+        _black_metal.clone(),
     )));
-
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(2.0, 0.0, -4.0),
+        0.5,
+        _red.clone(),
+    )));
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, 0.0, -4.0),
+        0.5,
+        _green.clone(),
+    )));
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(-2.0, 0.0, -4.0),
+        0.5,
+        _blue.clone(),
+    )));
     for y in (min_height..max_height).rev() {
         for x in 0..width {
             let mut col = Vector3::new(0.0, 0.0, 0.0);
@@ -113,7 +147,9 @@ fn trace(
             vec.push((col.z * 255.99) as u8);
             vec.push(255);
         }
+        bar.inc(1);
     }
+    bar.finish();
 }
 
 fn main() {
@@ -123,8 +159,10 @@ fn main() {
 
     let mut vec: Vec<u8> = Vec::with_capacity(width * height * 3);
 
-    let amount_threads = 4;
+    let amount_threads: usize = 4;
     let mut image_slices: Vec<Arc<Mutex<Vec<u8>>>> = Vec::new();
+    let mbar: MultiProgress = MultiProgress::new();
+
     for _ in 0..amount_threads {
         image_slices.push(Arc::new(Mutex::new(Vec::with_capacity(
             width * height * 3 / amount_threads,
@@ -133,6 +171,14 @@ fn main() {
     let mut handles: Vec<std::thread::JoinHandle<()>> = Vec::new();
     for i in 0..amount_threads {
         let threadslice = image_slices[i].clone();
+        let pbar = ProgressBar::new((height / amount_threads) as u64);
+        pbar.set_style(
+            ProgressStyle::default_bar()
+                .template("{msg} {bar:40.cyan/blue} [{eta:>5}] {pos:>7}/{len:7} ")
+                .progress_chars("##-"),
+        );
+        let b = mbar.add(pbar);
+
         let t1 = thread::spawn(move || {
             let mut vec = threadslice.lock().unwrap();
             trace(
@@ -142,10 +188,12 @@ fn main() {
                 i * height / amount_threads,
                 (i + 1) * height / amount_threads,
                 num_samples,
+                b,
             );
         });
         handles.push(t1);
     }
+    mbar.join_and_clear().unwrap();
 
     for handle in handles {
         match handle.join() {
@@ -159,10 +207,8 @@ fn main() {
             Ok(guard) => guard,
             Err(e) => e.into_inner(),
         };
-        let v: Vec<u8> = guard.to_vec();
-        for elem in v {
-            vec.push(elem);
-        }
+        let mut v: Vec<u8> = guard.to_vec();
+        vec.append(&mut v);
     }
 
     let path = Path::new(r"image.png");

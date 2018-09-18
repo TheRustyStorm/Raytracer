@@ -7,3 +7,4 @@ authors = ["TheSovietStorm <pzde95@yahoo.de>"]
 png = "0.12.0"
 cgmath = "0.16.1"
 rand = "0.5.5"
+indicatif = "0.9.0"
