@@ -30,7 +30,7 @@ fn surrounding_box(box0: &Aabb, box1: &Aabb) -> Aabb {
 }
 
 impl Hitable for HitableList {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, rec: &mut HitRecord) -> bool {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
         let mut temp_rec = HitRecord::new(t_max);
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
@@ -48,7 +48,7 @@ impl Hitable for HitableList {
         hit_anything
     }
 
-    fn bounding_box(&self, t0: f32, t1: f32, b: &mut Aabb) -> bool {
+    fn bounding_box(&self, t0: f64, t1: f64, b: &mut Aabb) -> bool {
         if self.list.len() < 1 {
             return false;
         }

@@ -8,13 +8,13 @@ use ray::Ray;
 use std::rc::Rc;
 
 pub struct Sphere {
-    pub center: Vector3<f32>,
-    pub radius: f32,
+    pub center: Vector3<f64>,
+    pub radius: f64,
     pub material: Rc<Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Vector3<f32>, radius: f32, material: Rc<Material>) -> Sphere {
+    pub fn new(center: Vector3<f64>, radius: f64, material: Rc<Material>) -> Sphere {
         Sphere {
             center,
             radius,
@@ -24,7 +24,7 @@ impl Sphere {
 }
 
 impl Hitable for Sphere {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, rec: &mut HitRecord) -> bool {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
         let oc = ray.origin - self.center;
         let a = ray.direction.dot(ray.direction);
         let b = oc.dot(ray.direction);
@@ -52,7 +52,7 @@ impl Hitable for Sphere {
         false
     }
 
-    fn bounding_box(&self, t0: f32, t1: f32, b: &mut Aabb) -> bool {
+    fn bounding_box(&self, t0: f64, t1: f64, b: &mut Aabb) -> bool {
         *b = Aabb::new(
             self.center - Vector3::new(self.radius, self.radius, self.radius),
             self.center + Vector3::new(self.radius, self.radius, self.radius),

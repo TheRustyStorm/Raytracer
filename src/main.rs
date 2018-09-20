@@ -8,12 +8,12 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use pathtracer::camera::Camera;
 use pathtracer::hitable::{HitRecord, Hitable};
 use pathtracer::hitable_list::HitableList;
-use pathtracer::material::{Dielectric, Lambertian, Metal};
+use pathtracer::material::{Dielectric, Lambertian, Material, Metal};
 use pathtracer::ray::Ray;
 use pathtracer::sphere::Sphere;
 use png::HasParameters;
 use rand::prelude::*;
-use std::f32;
+use std::f64;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -21,9 +21,9 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f32> {
-    let mut hit_record = HitRecord::new(f32::MAX);
-    if world.hit(ray, 0.001, f32::MAX, &mut hit_record) {
+fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f64> {
+    let mut hit_record = HitRecord::new(f64::MAX);
+    if world.hit(ray, 0.001, f64::MAX, &mut hit_record) {
         if let Some(ref mat) = hit_record.material {
             let (scattered, attenuation, valid) = mat.scatter(ray, &hit_record);
             if valid && depth < 1000 {
@@ -52,8 +52,8 @@ fn trace(
     num_samples: usize,
     bar: ProgressBar,
 ) {
-    let look_from = Vector3::new(0.0, 0.0, 5.0);
-    let look_at = Vector3::new(0.0, 0.0, -1.0);
+    let look_from = Vector3::new(0.0, 4.0, 5.0);
+    let look_at = Vector3::new(0.0, 0.0, -5.0);
     let up = Vector3::new(0.0, 1.0, 0.0);
     let dist_to_focus = (look_from - look_at).magnitude();
     let aperture = 0.0;
@@ -62,7 +62,7 @@ fn trace(
         look_at,
         up,
         20.0,
-        width as f32 / height as f32,
+        width as f64 / height as f64,
         aperture,
         dist_to_focus,
     );
@@ -95,15 +95,51 @@ fn trace(
     //glass
     let _glass = Rc::new(Dielectric::new(1.52));
 
+    //jules farben
+    let _color1 = Rc::new(Lambertian::new(Vector3::new(0.5176, 0.4392, 1.0)));
+    let _color2 = Rc::new(Lambertian::new(Vector3::new(0.8039, 0.3607, 0.3607)));
+    let _color3 = Rc::new(Lambertian::new(Vector3::new(0.6, 0.1960, 0.8)));
+    let _color4 = Rc::new(Lambertian::new(Vector3::new(0.8666, 0.6274, 0.8666)));
+    let _color5 = Rc::new(Lambertian::new(Vector3::new(0.6901, 0.8862, 1.0)));
+    let _color6 = Rc::new(Metal::new(Vector3::new(0.0, 1.0, 0.6039), 0.39));
+    let _color7 = Rc::new(Metal::new(Vector3::new(0.6039, 1.0, 0.6039), 0.67));
+    let _floor =  Rc::new(Lambertian::new(Vector3::new(0.2117, 0.2117, 0.2117)));
+
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, -100.5, -1.0),
+        100.0,
+        _floor.clone(),
+    )));
+    for y in 0..15 {
+        for x in 0..15 {
+            let num = y * 15 + x;
+            hitable_list.list.push(Box::new(Sphere::new(
+                Vector3::new(x as f64 - 15.0/2.0, 0.0, -(y + 1) as f64),
+                0.5,
+                match num % 7{
+                0 => _color1.clone(),
+                1 => _color2.clone(),
+                2 => _color3.clone(),
+                3 => _color4.clone(),
+                4 => _color5.clone(),
+                5 => _color6.clone(),
+                _ => _color7.clone(),
+                
+            },
+            )));
+        }
+    }
+    
+    /*
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, -100.5, -1.0),
+        100.0,
+        _white.clone(),
+    )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(0.0, 0.0, -1.0),
         0.5,
         _glass.clone(),
-    )));
-    hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(0.0, -100.5, -1.0),
-        100.0,
-        _white_metal.clone(),
     )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(1.0, 0.0, -1.0),
@@ -130,16 +166,17 @@ fn trace(
         0.5,
         _blue.clone(),
     )));
+    */
     for y in (min_height..max_height).rev() {
         for x in 0..width {
             let mut col = Vector3::new(0.0, 0.0, 0.0);
             for _ in 0..num_samples {
-                let u: f32 = (x as f32 + random::<f32>()) / width as f32;
-                let v: f32 = (y as f32 + random::<f32>()) / height as f32;
+                let u: f64 = (x as f64 + random::<f64>()) / width as f64;
+                let v: f64 = (y as f64 + random::<f64>()) / height as f64;
                 let ray = camera.get_ray(u, v);
                 col = col + color(&ray, &hitable_list, 0);
             }
-            col = col / num_samples as f32;
+            col = col / num_samples as f64;
             col = Vector3::new(col.x.sqrt(), col.y.sqrt(), col.z.sqrt());
 
             vec.push((col.x * 255.99) as u8);

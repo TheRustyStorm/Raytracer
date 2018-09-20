@@ -4,16 +4,16 @@ use ray::Ray;
 use std::cmp;
 
 pub struct Aabb {
-    pub min: Vector3<f32>,
-    pub max: Vector3<f32>,
+    pub min: Vector3<f64>,
+    pub max: Vector3<f64>,
 }
 
 impl Aabb {
-    pub fn new(min: Vector3<f32>, max: Vector3<f32>) -> Aabb {
+    pub fn new(min: Vector3<f64>, max: Vector3<f64>) -> Aabb {
         Aabb { min, max }
     }
 
-    pub fn hit(&self, r: &Ray, t_min: &mut f32, t_max: &mut f32) -> bool {
+    pub fn hit(&self, r: &Ray, t_min: &mut f64, t_max: &mut f64) -> bool {
         for i in 0..3 {
             let invD = 1.0 / r.direction[i];
             let mut t0 = (self.min[i] - r.origin[i]) * invD;

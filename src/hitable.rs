@@ -6,14 +6,14 @@ use ray::Ray;
 use std::rc::Rc;
 
 pub struct HitRecord {
-    pub t: f32,
-    pub p: Vector3<f32>,
-    pub normal: Vector3<f32>,
+    pub t: f64,
+    pub p: Vector3<f64>,
+    pub normal: Vector3<f64>,
     pub material: Option<Rc<Material>>,
 }
 
 impl HitRecord {
-    pub fn new(t: f32) -> HitRecord {
+    pub fn new(t: f64) -> HitRecord {
         HitRecord {
             t,
             p: Vector3::new(0.0, 0.0, 0.0),
@@ -24,6 +24,6 @@ impl HitRecord {
 }
 
 pub trait Hitable {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, rec: &mut HitRecord) -> bool;
-    fn bounding_box(&self, t0: f32, t1: f32, b: &mut Aabb) -> bool;
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool;
+    fn bounding_box(&self, t0: f64, t1: f64, b: &mut Aabb) -> bool;
 }
