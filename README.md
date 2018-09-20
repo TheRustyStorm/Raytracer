@@ -29,6 +29,7 @@ Here are some sample pictures:
 ![](https://github.com/TheSovietStorm/RayTracer/blob/master/image%209.png)
 ![](https://github.com/TheSovietStorm/RayTracer/blob/master/image%2010.png)
 ![](https://github.com/TheSovietStorm/RayTracer/blob/master/image%2011.png)
+![](https://github.com/TheSovietStorm/RayTracer/blob/master/image%2014.png)
 
 
 
