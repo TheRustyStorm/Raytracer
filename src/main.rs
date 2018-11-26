@@ -11,8 +11,7 @@ use pathtracer::hitable_list::HitableList;
 use pathtracer::material::{Dielectric, Lambertian, Material, Metal};
 use pathtracer::ray::Ray;
 use pathtracer::sphere::Sphere;
-use png::HasParameters;
-use rand::prelude::*;
+use png::HasParameters; use rand::prelude::*;
 use std::f64;
 use std::fs::File;
 use std::io::BufWriter;
@@ -52,7 +51,7 @@ fn trace(
     num_samples: usize,
     bar: ProgressBar,
 ) {
-    let look_from = Vector3::new(0.0, 4.0, 5.0);
+    let look_from = Vector3::new(0.0, 1.0, 10.0);
     let look_at = Vector3::new(0.0, 0.0, -5.0);
     let up = Vector3::new(0.0, 1.0, 0.0);
     let dist_to_focus = (look_from - look_at).magnitude();
@@ -83,7 +82,7 @@ fn trace(
     //blue
     let _blue_metal = Rc::new(Metal::new(Vector3::new(0.0, 0.0, 1.0), 0.1));
     //white
-    let _white_metal = Rc::new(Metal::new(Vector3::new(1.0, 1.0, 1.0), 0.1));
+    let _white_metal = Rc::new(Metal::new(Vector3::new(1.0, 1.0, 1.0), 0.01));
     //black \m/
     let _black_metal = Rc::new(Metal::new(Vector3::new(0.0, 0.0, 0.0), 0.1));
     //black
@@ -91,7 +90,8 @@ fn trace(
     //gold
     let _gold = Rc::new(Metal::new(Vector3::new(0.8, 0.6, 0.2), 0.3));
     //silver
-    let _silver = Rc::new(Metal::new(Vector3::new(0.8, 0.8, 0.8), 0.2));
+    let _silver = Rc::new(Metal::new(Vector3::new(0.8, 0.8, 0.8), 0.01));
+    let _metal = Rc::new(Metal::new(Vector3::new(0.9, 0.9, 0.9), 0.01));
     //glass
     let _glass = Rc::new(Dielectric::new(1.52));
 
@@ -108,8 +108,45 @@ fn trace(
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(0.0, -100.5, -1.0),
         100.0,
-        _floor.clone(),
+        _white.clone(),
     )));
+    
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, 103.5, -1.0),
+        100.0,
+        _white.clone(),
+    )));
+    
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, 0.0, -104.5),
+        100.0,
+        _white.clone(),
+    )));
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(-103.5, 0.0, -1.0),
+        100.0,
+        _red.clone(),
+    )));
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(103.5, 0.0, -1.0),
+        100.0,
+        _blue.clone(),
+    )));
+
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(-2.0, 0.5, -2.0),
+        1.0,
+        _white_metal.clone(),
+    )));
+
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(1.5, 0.5, -0.5),
+        1.0,
+        _glass.clone(),
+    )));
+
+
+    /*
     for y in 0..15 {
         for x in 0..15 {
             let num = y * 15 + x;
@@ -117,18 +154,20 @@ fn trace(
                 Vector3::new(x as f64 - 15.0/2.0, 0.0, -(y + 1) as f64),
                 0.5,
                 match num % 7{
-                0 => _color1.clone(),
-                1 => _color2.clone(),
-                2 => _color3.clone(),
-                3 => _color4.clone(),
-                4 => _color5.clone(),
-                5 => _color6.clone(),
-                _ => _color7.clone(),
+                0 => _red.clone(),
+                1 => _white_metal.clone(),
+                2 => _green.clone(),
+                3 => _white_metal.clone(),
+                4 => _white_metal.clone(),
+                5 => _blue.clone(),
+                _ => _white_metal.clone(),
                 
             },
             )));
         }
     }
+    */
+    
     
     /*
     hitable_list.list.push(Box::new(Sphere::new(
@@ -149,7 +188,7 @@ fn trace(
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(-1.0, 0.0, -1.0),
         0.5,
-        _black_metal.clone(),
+        _metal.clone(),
     )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(2.0, 0.0, -4.0),
@@ -191,12 +230,12 @@ fn trace(
 
 fn main() {
     let width: usize = 2560;
-    let height: usize = 1280;
+    let height: usize = 1600;
     let num_samples: usize = 1000;
 
     let mut vec: Vec<u8> = Vec::with_capacity(width * height * 3);
 
-    let amount_threads: usize = 4;
+    let amount_threads: usize = 8;
     let mut image_slices: Vec<Arc<Mutex<Vec<u8>>>> = Vec::new();
     let mbar: MultiProgress = MultiProgress::new();
 
