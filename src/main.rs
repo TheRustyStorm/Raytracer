@@ -106,22 +106,16 @@ fn trace(
     let _floor =  Rc::new(Lambertian::new(Vector3::new(0.2117, 0.2117, 0.2117)));
 
     hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, 0.0, -104.5),
+        100.0,
+        _white.clone(),
+    )));
+    hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(0.0, -100.5, -1.0),
         100.0,
         _white.clone(),
     )));
     
-    hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(0.0, 103.5, -1.0),
-        100.0,
-        _white.clone(),
-    )));
-    
-    hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(0.0, 0.0, -104.5),
-        100.0,
-        _white.clone(),
-    )));
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(-103.5, 0.0, -1.0),
         100.0,
@@ -132,17 +126,22 @@ fn trace(
         100.0,
         _blue.clone(),
     )));
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.0, 103.5, -1.0),
+        100.0,
+        _white.clone(),
+    )));
 
     hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(-2.0, 0.5, -2.0),
+        Vector3::new(-1.0, 0.5, 0.5),
         1.0,
         _white_metal.clone(),
     )));
 
     hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(1.5, 0.5, -0.5),
+        Vector3::new(1.0, 0.5, 0.5),
         1.0,
-        _glass.clone(),
+        _white_metal.clone(),
     )));
 
 
@@ -231,11 +230,11 @@ fn trace(
 fn main() {
     let width: usize = 2560;
     let height: usize = 1600;
-    let num_samples: usize = 1000;
+    let num_samples: usize = 2;
 
     let mut vec: Vec<u8> = Vec::with_capacity(width * height * 3);
 
-    let amount_threads: usize = 8;
+    let amount_threads: usize = 7;
     let mut image_slices: Vec<Arc<Mutex<Vec<u8>>>> = Vec::new();
     let mbar: MultiProgress = MultiProgress::new();
 
