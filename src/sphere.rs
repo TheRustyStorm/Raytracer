@@ -1,6 +1,5 @@
 extern crate cgmath;
 use self::cgmath::{InnerSpace, Vector3};
-use aabb::Aabb;
 use hitable::HitRecord;
 use hitable::Hitable;
 use material::Material;
@@ -10,12 +9,12 @@ use std::rc::Rc;
 pub struct Sphere {
     pub center: Vector3<f64>,
     pub radius: f64,
-    pub material: Rc<Material>,
+    pub material: Rc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Vector3<f64>, radius: f64, material: Rc<Material>) -> Sphere {
-        Sphere {
+    pub fn new(center: Vector3<f64>, radius: f64, material: Rc<dyn Material>) -> Self {
+        Self {
             center,
             radius,
             material,
@@ -29,10 +28,10 @@ impl Hitable for Sphere {
         let a = ray.direction.dot(ray.direction);
         let b = oc.dot(ray.direction);
         let c = oc.dot(oc) - self.radius * self.radius;
-        let d = b * b - a * c;
+        let d = b.powi(2) - a * c;
 
         if d > 0.0 {
-            let mut temp = (-b - (b * b - a * c).sqrt()) / a;
+            let mut temp = (-b - (b.powi(2) - a * c).sqrt()) / a;
             if temp < t_max && temp > t_min {
                 rec.t = temp;
                 rec.p = ray.get_pos_on_ray(rec.t);
@@ -40,7 +39,7 @@ impl Hitable for Sphere {
                 rec.material = Some(self.material.clone());
                 return true;
             }
-            temp = (-b + (b * b - a * c).sqrt()) / a;
+            temp = (-b + (b.powi(2) - a * c).sqrt()) / a;
             if temp < t_max && temp > t_min {
                 rec.t = temp;
                 rec.p = ray.get_pos_on_ray(rec.t);
@@ -52,11 +51,4 @@ impl Hitable for Sphere {
         false
     }
 
-    fn bounding_box(&self, t0: f64, t1: f64, b: &mut Aabb) -> bool {
-        *b = Aabb::new(
-            self.center - Vector3::new(self.radius, self.radius, self.radius),
-            self.center + Vector3::new(self.radius, self.radius, self.radius),
-        );
-        true
-    }
 }

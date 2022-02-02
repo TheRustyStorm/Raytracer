@@ -7,12 +7,14 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn new(origin: &Vector3<f64>, direction: Vector3<f64>) -> Ray {
-        Ray {
-            origin: origin.clone(),
-            direction: direction,
+    #[must_use]
+    pub const fn new(origin: Vector3<f64>, direction: Vector3<f64>) -> Self {
+        Self {
+            origin,
+            direction,
         }
     }
+    #[must_use]
     pub fn get_pos_on_ray(&self, t: f64) -> Vector3<f64> {
         self.origin + self.direction * t
     }

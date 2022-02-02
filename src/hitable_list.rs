@@ -1,33 +1,19 @@
 extern crate cgmath;
-use self::cgmath::{InnerSpace, Vector3};
-use aabb::Aabb;
 use hitable::HitRecord;
 use hitable::Hitable;
 use ray::Ray;
 
 pub struct HitableList {
-    pub list: Vec<Box<Hitable>>,
+    pub list: Vec<Box<dyn Hitable>>,
 }
 
 impl HitableList {
-    pub fn new(list: Vec<Box<Hitable>>) -> HitableList {
-        HitableList { list }
+    #[must_use]
+    pub fn new(list: Vec<Box<dyn Hitable>>) -> Self {
+        Self { list }
     }
 }
 
-fn surrounding_box(box0: &Aabb, box1: &Aabb) -> Aabb {
-    let small = Vector3::new(
-        box0.min.x.min(box1.min.x),
-        box0.min.y.min(box1.min.y),
-        box0.min.z.min(box1.min.z),
-    );
-    let big = Vector3::new(
-        box0.max.x.min(box1.max.x),
-        box0.max.y.min(box1.max.y),
-        box0.max.z.min(box1.max.z),
-    );
-    Aabb::new(small, big)
-}
 
 impl Hitable for HitableList {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64, rec: &mut HitRecord) -> bool {
@@ -48,26 +34,4 @@ impl Hitable for HitableList {
         hit_anything
     }
 
-    fn bounding_box(&self, t0: f64, t1: f64, b: &mut Aabb) -> bool {
-        if self.list.len() < 1 {
-            return false;
-        }
-        let mut temp_box = Aabb::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0));
-        let first_true = self.list[0].bounding_box(t0, t1, &mut temp_box);
-        if !first_true {
-            return false;
-        } else {
-            *b = temp_box;
-        }
-        let mut temp_box = Aabb::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0));
-        for i in &self.list {
-            if self.list[0].bounding_box(t0, t1, &mut temp_box) {
-                *b = surrounding_box(&b, &temp_box);
-            } else {
-                return false;
-            }
-        }
-
-        true
-    }
 }

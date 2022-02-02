@@ -12,7 +12,8 @@ fn random_in_unit_sphere() -> Vector3<f64> {
         2.0 * random::<f64>() - 1.0,
         2.0 * random::<f64>() - 1.0,
         2.0 * random::<f64>() - 1.0,
-    ).normalize()
+    )
+    .normalize()
 }
 
 fn random_in_unit_sphere_new() -> Vector3<f64> {
@@ -47,7 +48,7 @@ fn refract(v: &Vector3<f64>, n: &Vector3<f64>, ni_over_nt: f64) -> Option<Vector
 fn schlick(cosine: f64, ref_idx: f64) -> f64 {
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 = r0 * r0;
-    r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
+    (1.0 - r0).mul_add((1.0 - cosine).powi(5), r0)
 }
 
 pub trait Material {
@@ -67,30 +68,59 @@ pub struct Dielectric {
     pub ref_idx: f64,
 }
 
+pub struct Emitting {
+    pub emission: Vector3<f64>,
+    pub brightness: f64,
+}
+
 impl Lambertian {
-    pub fn new(albedo: Vector3<f64>) -> Lambertian {
-        Lambertian { albedo }
+    #[must_use]
+    pub const fn new(albedo: Vector3<f64>) -> Self {
+        Self { albedo }
     }
 }
 
 impl Metal {
-    pub fn new(albedo: Vector3<f64>, fuzz: f64) -> Metal {
-        Metal { albedo, fuzz }
+    #[must_use]
+    pub const fn new(albedo: Vector3<f64>, fuzz: f64) -> Self {
+        Self { albedo, fuzz }
     }
 }
 
 impl Dielectric {
-    pub fn new(ri: f64) -> Dielectric {
-        Dielectric { ref_idx: ri }
+    #[must_use]
+    pub const fn new(ri: f64) -> Self {
+        Self { ref_idx: ri }
+    }
+}
+
+impl Emitting {
+    #[must_use]
+    pub const fn new(emission: Vector3<f64>, brightness: f64) -> Self {
+        Self {
+            emission,
+            brightness,
+        }
     }
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> (Ray, Vector3<f64>, bool) {
+    fn scatter(&self, _: &Ray, hit_record: &HitRecord) -> (Ray, Vector3<f64>, bool) {
         let target = hit_record.p + hit_record.normal + random_in_unit_sphere_new();
         (
-            Ray::new(&hit_record.p, target - hit_record.p),
+            Ray::new(hit_record.p, target - hit_record.p),
             self.albedo,
+            true,
+        )
+    }
+}
+
+impl Material for Emitting {
+    fn scatter(&self, _: &Ray, hit_record: &HitRecord) -> (Ray, Vector3<f64>, bool) {
+        let target = hit_record.p + hit_record.normal + random_in_unit_sphere_new();
+        (
+            Ray::new(hit_record.p, target - hit_record.p),
+            self.emission * self.brightness,
             true,
         )
     }
@@ -100,7 +130,7 @@ impl Material for Metal {
     fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> (Ray, Vector3<f64>, bool) {
         let reflected = reflect(&r_in.direction.normalize(), &hit_record.normal);
         let scattered = Ray::new(
-            &hit_record.p,
+            hit_record.p,
             reflected + self.fuzz * random_in_unit_sphere(),
         );
         let valid = scattered.direction.dot(hit_record.normal) > 0.0;
@@ -117,31 +147,25 @@ impl Material for Dielectric {
         let refracted: Vector3<f64>;
         let scattered;
         let reflected_prob: f64;
-        let cosine: f64;
-        if r_in.direction.dot(hit_record.normal) > 0.0 {
+        let cosine = if r_in.direction.dot(hit_record.normal) > 0.0 {
             outward_normal = -hit_record.normal;
             ni_over_nt = self.ref_idx;
-            cosine =
-                self.ref_idx * r_in.direction.dot(hit_record.normal) / r_in.direction.magnitude();
+            self.ref_idx * r_in.direction.dot(hit_record.normal) / r_in.direction.magnitude()
         } else {
             outward_normal = hit_record.normal;
             ni_over_nt = 1.0 / self.ref_idx;
-            cosine = -(r_in.direction.dot(hit_record.normal) / r_in.direction.magnitude());
-        }
-        match refract(&r_in.direction, &outward_normal, ni_over_nt) {
-            Some(refract) => {
-                refracted = refract;
-                reflected_prob = schlick(cosine, self.ref_idx);
-                if random::<f64>() < reflected_prob {
-                    scattered = Ray::new(&hit_record.p, reflected);
-                } else {
-                    scattered = Ray::new(&hit_record.p, refracted);
-                }
+            -(r_in.direction.dot(hit_record.normal) / r_in.direction.magnitude())
+        };
+        if let Some(refract) = refract(&r_in.direction, &outward_normal, ni_over_nt) {
+            refracted = refract;
+            reflected_prob = schlick(cosine, self.ref_idx);
+            if random::<f64>() < reflected_prob {
+                scattered = Ray::new(hit_record.p, reflected);
+            } else {
+                scattered = Ray::new(hit_record.p, refracted);
             }
-            None => {
-                reflected_prob = 1.0;
-                scattered = Ray::new(&hit_record.p, reflected);
-            }
+        } else {
+            scattered = Ray::new(hit_record.p, reflected);
         }
         (scattered, attenuation, true)
     }

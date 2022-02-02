@@ -8,7 +8,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use pathtracer::camera::Camera;
 use pathtracer::hitable::{HitRecord, Hitable};
 use pathtracer::hitable_list::HitableList;
-use pathtracer::material::{Dielectric, Lambertian, Material, Metal};
+use pathtracer::material::{Dielectric, Lambertian, Metal, Emitting};
 use pathtracer::ray::Ray;
 use pathtracer::sphere::Sphere;
 use png::HasParameters; use rand::prelude::*;
@@ -25,7 +25,7 @@ fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f64> {
     if world.hit(ray, 0.001, f64::MAX, &mut hit_record) {
         if let Some(ref mat) = hit_record.material {
             let (scattered, attenuation, valid) = mat.scatter(ray, &hit_record);
-            if valid && depth < 1000 {
+            if valid && depth < 10 {
                 let col = color(&scattered, world, depth + 1);
                 return Vector3::new(
                     col.x * attenuation.x,
@@ -33,7 +33,7 @@ fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f64> {
                     col.z * attenuation.z,
                 );
             } else {
-                return Vector3::new(0.0, 0.0, 0.0);
+                return Vector3::new(1.0, 1.0, 1.0);
             }
         }
     }
@@ -42,6 +42,7 @@ fn color<T: Hitable>(ray: &Ray, world: &T, depth: usize) -> Vector3<f64> {
     (1.0 - t) * Vector3::new(1.0, 1.0, 1.0) + t * Vector3::new(0.5, 0.7, 1.0)
 }
 
+#[allow(clippy::redundant_clone)]
 fn trace(
     vec: &mut Vec<u8>,
     width: usize,
@@ -51,7 +52,7 @@ fn trace(
     num_samples: usize,
     bar: ProgressBar,
 ) {
-    let look_from = Vector3::new(0.0, 1.0, 10.0);
+    let look_from = Vector3::new(0.0, 2.0, 15.0);
     let look_at = Vector3::new(0.0, 0.0, -5.0);
     let up = Vector3::new(0.0, 1.0, 0.0);
     let dist_to_focus = (look_from - look_at).magnitude();
@@ -69,6 +70,7 @@ fn trace(
 
     //red
     let _red = Rc::new(Lambertian::new(Vector3::new(1.0, 0.0, 0.0)));
+    let _red_light = Rc::new(Emitting::new(Vector3::new(1.0, 0.0, 0.0), 20.0));
     //green
     let _green = Rc::new(Lambertian::new(Vector3::new(0.0, 1.0, 0.0)));
     //blue
@@ -105,6 +107,27 @@ fn trace(
     let _color7 = Rc::new(Metal::new(Vector3::new(0.6039, 1.0, 0.6039), 0.67));
     let _floor =  Rc::new(Lambertian::new(Vector3::new(0.2117, 0.2117, 0.2117)));
 
+    /*
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(-0.7, 0.5, 0.5),
+        0.1,
+        _red_light.clone(),
+    )));
+    hitable_list.list.push(Box::new(Sphere::new(
+        Vector3::new(0.7, -0.5, 0.5),
+        0.1,
+        _green.clone(),
+    )));
+
+    hitable_list.list.push(Box::new(Triangle::new(
+        Vector3::new(1.0, 0.0, 1.0),
+        Vector3::new(-1.0, 0.0, 1.0),
+        Vector3::new(-1.0, 0.0, -1.0),
+        _white_metal.clone(),
+    )));
+    */
+
+
     hitable_list.list.push(Box::new(Sphere::new(
         Vector3::new(0.0, 0.0, -104.5),
         100.0,
@@ -133,17 +156,16 @@ fn trace(
     )));
 
     hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(-1.0, 0.5, 0.5),
+        Vector3::new(-1.0, 0.75, 0.5),
         1.0,
         _white_metal.clone(),
     )));
 
     hitable_list.list.push(Box::new(Sphere::new(
-        Vector3::new(1.0, 0.5, 0.5),
+        Vector3::new(1.0, 0.75, 2.5),
         1.0,
-        _white_metal.clone(),
+        _glass.clone(),
     )));
-
 
     /*
     for y in 0..15 {
@@ -212,9 +234,9 @@ fn trace(
                 let u: f64 = (x as f64 + random::<f64>()) / width as f64;
                 let v: f64 = (y as f64 + random::<f64>()) / height as f64;
                 let ray = camera.get_ray(u, v);
-                col = col + color(&ray, &hitable_list, 0);
+                col += color(&ray, &hitable_list, 0);
             }
-            col = col / num_samples as f64;
+            col /= num_samples as f64;
             col = Vector3::new(col.x.sqrt(), col.y.sqrt(), col.z.sqrt());
 
             vec.push((col.x * 255.99) as u8);
@@ -228,13 +250,13 @@ fn trace(
 }
 
 fn main() {
-    let width: usize = 2560;
-    let height: usize = 1600;
-    let num_samples: usize = 2;
+    let width: usize = 3840;
+    let height: usize = 2160;
+    let num_samples: usize = 10;
 
     let mut vec: Vec<u8> = Vec::with_capacity(width * height * 3);
 
-    let amount_threads: usize = 7;
+    let amount_threads: usize = 15;
     let mut image_slices: Vec<Arc<Mutex<Vec<u8>>>> = Vec::new();
     let mbar: MultiProgress = MultiProgress::new();
 
@@ -244,7 +266,7 @@ fn main() {
         ))));
     }
     let mut handles: Vec<std::thread::JoinHandle<()>> = Vec::new();
-    for i in 0..amount_threads {
+    for (i, _) in image_slices.iter().enumerate().take(amount_threads) {
         let threadslice = image_slices[i].clone();
         let pbar = ProgressBar::new((height / amount_threads) as u64);
         pbar.set_style(
@@ -278,7 +300,7 @@ fn main() {
     }
 
     for slice in image_slices.into_iter().rev() {
-        let mut guard = match slice.lock() {
+        let guard = match slice.lock() {
             Ok(guard) => guard,
             Err(e) => e.into_inner(),
         };
@@ -288,7 +310,7 @@ fn main() {
 
     let path = Path::new(r"image.png");
     let file = File::create(path).unwrap();
-    let ref mut w = BufWriter::new(file);
+    let w = &mut BufWriter::new(file);
     let mut encoder = png::Encoder::new(w, width as u32, height as u32); // Width is 2 pixels and height is 1.
     encoder.set(png::ColorType::RGBA).set(png::BitDepth::Eight);
     let mut writer = encoder.write_header().unwrap();
